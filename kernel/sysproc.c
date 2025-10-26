@@ -92,6 +92,25 @@ sys_uptime(void)
   return xticks;
 }
 
+uint64
+sys_mycall(void)
+{
+  printf("Hello from the kernel!\n");
+  return 0;
+}
 
-
-
+// Accept one integer argument (PID)
+// Find the process with that PID using find_proc_by_pid()
+// Set the tracing flag for matching process
+// Return 0 on success, -1 on failure (if process not found)
+uint64
+sys_trace(int pid)
+{
+  struct proc *p = find_proc_by_pid(pid);
+  if(p != 0 && p->traced == 1){
+    return 0;
+  }
+  else{
+    return -1;
+  }
+}
