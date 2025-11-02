@@ -141,6 +141,7 @@ UPROGS=\
 	$U/_zombie\
 	$U/_hello\
 	$U/_find\
+	$U/_strace\
 
 
 

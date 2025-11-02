@@ -128,7 +128,7 @@ extern uint64 sys_link(void);
 extern uint64 sys_mkdir(void);
 extern uint64 sys_close(void);
 extern uint64 sys_mycall(void);
-extern uint64 sys_trace(int pid);
+extern uint64 sys_trace(void);
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -158,10 +158,6 @@ static uint64 (*syscalls[])(void) = {
 [SYS_trace]   sys_trace,
 };
 
-
-
-
-
 void
 syscall(void)
 {
@@ -170,14 +166,50 @@ syscall(void)
 
   num = p->trapframe->a7;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
+    // Save first argument BEFORE syscall dispatch
+    uint64 arg0 = p->trapframe->a0;
+
     // Use num to lookup the system call function for num, call it,
     // and store its return value in p->trapframe->a0
     p->trapframe->a0 = syscalls[num]();
+
+    if (p->traced) {
+      // Print syscall name, first argument
+      printf("[pid %d] %s", 
+              p->pid, syscall_names[num]);
+      if (num == SYS_open || num == SYS_chdir || num == SYS_mkdir || num == SYS_unlink || num == SYS_link)  {
+        char path[MAXPATH];
+        if (fetchstr(arg0, path, sizeof(path)) >= 0){
+          printf("(\"%s\")", path);
+        }
+        else{
+          printf("(<bad ptr>)");
+        }
+      }
+      else if (num == SYS_exec) {
+        uint64 argv_addr = p->trapframe->a1;
+        uint64 prog_name_addr;
+        char prog_name[MAXPATH];
+        if (fetchaddr(argv_addr, &prog_name_addr) >= 0 && fetchstr(prog_name_addr, prog_name, sizeof(prog_name)) >= 0){
+          printf("(\"%s\")", prog_name);
+        }
+        else{
+          printf("(<bad arg>)");
+        }
+      }
+      else {
+        int iarg;
+        argint(0, &iarg);
+        printf("(%d)", (int)arg0);
+      }
+      // Print the return value
+      printf(" = %d\n", (int)p->trapframe->a0);
+    }
+
   } else {
     printf("%d %s: unknown sys call %d\n",
             p->pid, p->name, num);
     p->trapframe->a0 = -1;
   }
 }
-
 
