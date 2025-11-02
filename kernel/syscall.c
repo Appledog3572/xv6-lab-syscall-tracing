@@ -168,7 +168,7 @@ syscall(void)
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     // Save first argument BEFORE syscall dispatch
     uint64 arg0 = p->trapframe->a0;
-
+    
     // Use num to lookup the system call function for num, call it,
     // and store its return value in p->trapframe->a0
     p->trapframe->a0 = syscalls[num]();
